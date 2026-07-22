@@ -1,0 +1,50 @@
+// Copyright (C) 2022 The Android Open Source Project
+// Copyright (C) 2025 KonstaKANG
+//
+// SPDX-License-Identifier: Apache-2.0
+
+cc_binary {
+    name: "android.hardware.tv.hdmi.connection-service.rpi",
+    relative_install_path: "hw",
+    vendor: true,
+    srcs: [
+        "HdmiConnection.cpp",
+        "main.cpp",
+    ],
+    shared_libs: [
+        "android.hardware.tv.hdmi.connection-V1-ndk",
+        "libbase",
+        "libbinder_ndk",
+        "liblog",
+    ],
+    installable: false,
+}
+
+prebuilt_etc {
+    name: "android.hardware.tv.hdmi.connection-service.rpi.rc",
+    src: "android.hardware.tv.hdmi.connection-service.rpi.rc",
+    installable: false,
+}
+
+prebuilt_etc {
+    name: "android.hardware.tv.hdmi.connection-service.rpi.xml",
+    src: "android.hardware.tv.hdmi.connection-service.rpi.xml",
+    sub_dir: "vintf",
+    installable: false,
+}
+
+apex {
+    name: "com.android.hardware.tv.hdmi.connection.rpi",
+    manifest: "apex_manifest.json",
+    file_contexts: "apex_file_contexts",
+    key: "com.android.hardware.key",
+    certificate: ":com.android.hardware.certificate",
+    updatable: false,
+    vendor: true,
+
+    binaries: ["android.hardware.tv.hdmi.connection-service.rpi"],
+    prebuilts: [
+        "android.hardware.tv.hdmi.connection-service.rpi.rc",
+        "android.hardware.tv.hdmi.connection-service.rpi.xml",
+    ],
+}

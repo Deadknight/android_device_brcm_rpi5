@@ -1,0 +1,10 @@
+<compatibility-matrix version="1.0" type="framework" level="202504">
+    <hal format="aidl">
+        <name>android.hardware.media.c2</name>
+        <version>1</version>
+        <interface>
+            <name>IComponentStore</name>
+            <instance>ffmpeg</instance>
+        </interface>
+    </hal>
+</compatibility-matrix>

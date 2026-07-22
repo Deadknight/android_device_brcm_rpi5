@@ -1,0 +1,53 @@
+// Copyright (C) 2020 The Android Open Source Project
+// Copyright (C) 2024 KonstaKANG
+//
+// SPDX-License-Identifier: Apache-2.0
+
+cc_binary {
+    name: "android.hardware.usb.gadget-service.rpi",
+    relative_install_path: "hw",
+    vendor: true,
+    srcs: [
+        "MonitorFfs.cpp",
+        "UsbGadget.cpp",
+        "UsbGadgetUtils.cpp",
+        "main.cpp",
+    ],
+    shared_libs: [
+        "android.hardware.usb.gadget-V1-ndk",
+        "libbase",
+        "libbinder_ndk",
+        "liblog",
+        "libutils",
+    ],
+    installable: false,
+}
+
+prebuilt_etc {
+    name: "android.hardware.usb.gadget-service.rpi.rc",
+    src: "android.hardware.usb.gadget-service.rpi.rc",
+    installable: false,
+}
+
+prebuilt_etc {
+    name: "android.hardware.usb.gadget-service.rpi.xml",
+    src: "android.hardware.usb.gadget-service.rpi.xml",
+    sub_dir: "vintf",
+    installable: false,
+}
+
+apex {
+    name: "com.android.hardware.usb.gadget.rpi",
+    manifest: "apex_manifest.json",
+    file_contexts: "apex_file_contexts",
+    key: "com.android.hardware.key",
+    certificate: ":com.android.hardware.certificate",
+    updatable: false,
+    vendor: true,
+
+    binaries: ["android.hardware.usb.gadget-service.rpi"],
+    prebuilts: [
+        "android.hardware.usb.gadget-service.rpi.rc",
+        "android.hardware.usb.gadget-service.rpi.xml",
+    ],
+}

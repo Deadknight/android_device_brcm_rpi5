@@ -1,0 +1,53 @@
+// Copyright (C) 2021 The Android Open Source Project
+// Copyright (C) 2025 KonstaKANG
+//
+// SPDX-License-Identifier: Apache-2.0
+
+cc_binary {
+    name: "android.hardware.tv.hdmi.cec-service.rpi",
+    relative_install_path: "hw",
+    vendor: true,
+    srcs: [
+        "HdmiCec.cpp",
+        "HdmiCecPort.cpp",
+        "main.cpp",
+    ],
+    shared_libs: [
+        "android.hardware.tv.hdmi.cec-V1-ndk",
+        "libbase",
+        "libbinder_ndk",
+        "libcutils",
+        "libhardware",
+        "liblog",
+    ],
+    installable: false,
+}
+
+prebuilt_etc {
+    name: "android.hardware.tv.hdmi.cec-service.rpi.rc",
+    src: "android.hardware.tv.hdmi.cec-service.rpi.rc",
+    installable: false,
+}
+
+prebuilt_etc {
+    name: "android.hardware.tv.hdmi.cec-service.rpi.xml",
+    src: "android.hardware.tv.hdmi.cec-service.rpi.xml",
+    sub_dir: "vintf",
+    installable: false,
+}
+
+apex {
+    name: "com.android.hardware.tv.hdmi.cec.rpi",
+    manifest: "apex_manifest.json",
+    file_contexts: "apex_file_contexts",
+    key: "com.android.hardware.key",
+    certificate: ":com.android.hardware.certificate",
+    updatable: false,
+    vendor: true,
+
+    binaries: ["android.hardware.tv.hdmi.cec-service.rpi"],
+    prebuilts: [
+        "android.hardware.tv.hdmi.cec-service.rpi.rc",
+        "android.hardware.tv.hdmi.cec-service.rpi.xml",
+    ],
+}

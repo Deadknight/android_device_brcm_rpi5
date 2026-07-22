@@ -1,0 +1,33 @@
+// Copyright (C) 2019 The Android Open Source Project
+// Copyright (C) 2021-2022 KonstaKANG
+//
+// SPDX-License-Identifier: Apache-2.0
+
+cc_binary {
+    name: "suspend_blocker_rpi",
+    vendor: true,
+    srcs: ["suspend_blocker_rpi.cpp"],
+    shared_libs: ["libpower"],
+    installable: false,
+}
+
+prebuilt_etc {
+    name: "suspend_blocker_rpi.rc",
+    src: "suspend_blocker_rpi.rc",
+    installable: false,
+}
+
+apex {
+    name: "com.android.hardware.suspend_blocker.rpi",
+    manifest: "apex_manifest.json",
+    file_contexts: "apex_file_contexts",
+    key: "com.android.hardware.key",
+    certificate: ":com.android.hardware.certificate",
+    updatable: false,
+    vendor: true,
+
+    binaries: ["suspend_blocker_rpi"],
+    prebuilts: [
+        "suspend_blocker_rpi.rc",
+    ],
+}

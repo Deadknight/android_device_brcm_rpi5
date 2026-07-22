@@ -1,0 +1,6 @@
+service vendor.health-rpi /apex/com.android.hardware.health.rpi/bin/hw/android.hardware.health-service.rpi
+    class hal
+    user system
+    group system
+    capabilities WAKE_ALARM BLOCK_SUSPEND
+    file /dev/kmsg w

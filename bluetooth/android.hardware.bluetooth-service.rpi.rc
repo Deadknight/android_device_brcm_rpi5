@@ -1,0 +1,6 @@
+service vendor.bluetooth-rpi /apex/com.android.hardware.bluetooth.rpi/bin/hw/android.hardware.bluetooth-service.rpi
+    class hal
+    capabilities BLOCK_SUSPEND NET_ADMIN SYS_NICE
+    user bluetooth
+    group bluetooth
+    task_profiles HighPerformance
