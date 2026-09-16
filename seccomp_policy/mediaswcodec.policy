@@ -1,3 +1,7 @@
 # device specific syscalls
 sched_getaffinity: 1
 sysinfo: 1
+
+# Required by Mesa/V3D worker queues used by the ARDA Codec2 GPU path.
+sched_setscheduler: 1
+sched_setaffinity: 1
