@@ -113,8 +113,22 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/car_core_hardware.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/car_core_hardware.xml
 
 # Vehicle
+# ARDA_RPI5_VHAL_PORT_V1
 PRODUCT_PACKAGES += \
-    android.hardware.automotive.vehicle@V4-default-service
+    arda-vhal-base-service
+
+# ARDA_RPI5_MAPS_AND_INPUT_PORT_V1
+
+# Google Maps/GMS Chimera mount namespace and package visibility fixes.
+PRODUCT_PACKAGES += \
+    ArdaFrameworkGoogleVisibilityOverlay
+
+PRODUCT_COPY_FILES += \
+    vendor/arda/configs/arda-google-sysconfig.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/sysconfig/arda-google-sysconfig.xml
+
+# Platform-signed persistent input bridge for ARDA AAP input injection.
+PRODUCT_PACKAGES += ArdaInputBridge
+PRODUCT_PACKAGES_DEBUG += arda-input-bridge-probe
 
 # Device identifier. This must come after all inclusions.
 PRODUCT_DEVICE := rpi5
@@ -122,3 +136,32 @@ PRODUCT_NAME := aosp_rpi5_car
 PRODUCT_BRAND := Raspberry
 PRODUCT_MODEL := Pi 5
 PRODUCT_MANUFACTURER := Raspberry
+
+# ARDA_RPI5_CORE_PRODUCT_PORT_V1
+
+# ARDA Vehicle Manager and reference smoke adapter.
+$(call inherit-product-if-exists, vendor/arda/vehicle/arda_vehicle.mk)
+$(call inherit-product-if-exists, vendor/arda/vehicle/arda_vehicle_smoke.mk)
+
+# Google Automotive / GAS integration.
+$(call inherit-product-if-exists, vendor/arda/gas_car/arda_gas_car.mk)
+$(call inherit-product-if-exists, vendor/arda/gas_car/arda_google_core_product.mk)
+
+# Google Maps AAOS VMS early-start overlay.
+PRODUCT_PACKAGES += ArdaCarServiceVmsOverlay
+
+# Exact signed split APK bytes captured from the known-good ARDA runtime.
+PRODUCT_PACKAGES += \
+    ArdaMapsSplitArm64 \
+    ArdaMapsSplitMdpi \
+    ArdaGmsSplitAllLocales \
+    ArdaGmsSplitEn \
+    ArdaGmsSplitMdpi \
+    ArdaVendingSplitArm64 \
+    ArdaVendingSplitEn
+
+# ARDA GNSS AIDL HAL.
+$(call inherit-product-if-exists, vendor/arda/gnss/arda_gnss.mk)
+
+# ARDA connectivity transport core: ArdaPlatformPriv + arda-connectivityd.
+$(call inherit-product-if-exists, vendor/arda/ardaplatform/arda_connectivity_product.mk)

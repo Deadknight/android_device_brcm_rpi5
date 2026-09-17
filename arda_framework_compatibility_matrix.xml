@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<compatibility-matrix version="1.0" type="framework">
+    <!--
+        ARDA base VHAL is an internal device-specific backing instance.
+        /default remains the framework-facing proxy instance.
+        DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE entries must be optional.
+    -->
+    <hal format="aidl" optional="true">
+        <name>android.hardware.automotive.vehicle</name>
+        <version>4</version>
+        <interface>
+            <name>IVehicle</name>
+            <instance>arda_base</instance>
+        </interface>
+    </hal>
+</compatibility-matrix>
