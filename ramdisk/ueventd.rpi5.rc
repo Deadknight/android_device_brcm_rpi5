@@ -1,5 +1,7 @@
 # Bluetooth
 /dev/rfkill                                                                  0660   bluetooth  bluetooth
+# ARDA_PI5_BT_RFKILL_PERMS_V1_1
+/sys/devices/*/bluetooth/hci*/rfkill* state 0660 bluetooth bluetooth no_fnm_pathname
 
 # Camera
 /dev/media*                                                                  0660   system     camera

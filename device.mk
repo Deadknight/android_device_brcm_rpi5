@@ -188,3 +188,7 @@ PRODUCT_PACKAGES += \
 
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml
+
+# ARDA_PI5_BT_SELFHEAL_V4_HELPER_COPY
+PRODUCT_COPY_FILES += \
+    device/brcm/rpi5/ramdisk/arda-bt-selfheal-v4.sh:$(TARGET_COPY_OUT_VENDOR)/bin/arda-bt-selfheal-v4.sh

@@ -87,3 +87,13 @@ on property:sys.usb.controller=*
     mount functionfs mtp /dev/usb-ffs/mtp rmode=0770,fmode=0660,uid=1024,gid=1024,no_disconnect=1
     mount functionfs ptp /dev/usb-ffs/ptp rmode=0770,fmode=0660,uid=1024,gid=1024,no_disconnect=1
     setprop sys.usb.configfs 2
+
+# ARDA_PI5_USB_CONFIGFS2_NATIVE_ADBD_RESTART_V2
+#
+# configfs=2 is set only after the Pi-specific FunctionFS mounts above exist.
+# For ADB-only mode, restart adbd natively at that state boundary.
+# Native init restart starts adbd if stopped, or performs stop/start if running.
+# This removes the V1 shell sampling race on init.svc.adbd.
+on property:sys.usb.config=adb && property:sys.usb.configfs=2
+    write /dev/kmsg "ARDA_PI5_USB_CONFIGFS2_NATIVE_ADBD_RESTART_V2"
+    restart adbd

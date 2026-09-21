@@ -73,6 +73,10 @@ namespace aidl::android::hardware::bluetooth::impl {
 // Wait indefinitely for the selected HCI interface to be enabled in the
 // bluetooth driver.
 int NetBluetoothMgmt::waitHciDev(int hci_interface) {
+  constexpr int kPollSliceMs = 250;
+  constexpr int kMaxPollAttempts = 8;        // 2 seconds total.
+  constexpr int kIndexListRetryEvery = 4;   // Re-query every 1 second.
+
   ALOGI("waiting for hci interface %d", hci_interface);
 
   int ret = -1;
@@ -110,13 +114,19 @@ int NetBluetoothMgmt::waitHciDev(int hci_interface) {
     goto end;
   }
 
-  // Poll the control socket waiting for the command response,
-  // and subsequent [Index Added] events. The loops continue without
-  // timeout until the selected hci interface is detected.
+  // ARDA_PI5_BT_BOUNDED_HCI_WAIT_V1
+  //
+  // Never block the single AIDL binder thread indefinitely while waiting for
+  // the kernel HCI index. A wedged initialize() makes the registered HAL
+  // service unable to answer even interface-descriptor or dumpsys requests.
+  //
+  // Use short poll slices with a hard 10 second deadline. Periodically repeat
+  // READ_INDEX_LIST so a missed INDEX_ADDED event cannot wedge initialization.
   pollfd = {.fd = fd, .events = POLLIN};
 
-  for (;;) {
-    ret = poll(&pollfd, 1, -1);
+  for (int poll_attempt = 0; poll_attempt < kMaxPollAttempts;
+       ++poll_attempt) {
+    ret = poll(&pollfd, 1, kPollSliceMs);
 
     // Poll interrupted, try again.
     if (ret == -1 && (errno == EINTR || errno == EAGAIN)) {
@@ -129,8 +139,27 @@ int NetBluetoothMgmt::waitHciDev(int hci_interface) {
       break;
     }
 
-    // Spurious wakeup, try again.
-    if (ret == 0 || (pollfd.revents & POLLIN) == 0) {
+    // Poll slice expired. Re-query the current controller list periodically
+    // in case INDEX_ADDED was missed between the initial query and this wait.
+    if (ret == 0) {
+      if ((poll_attempt + 1) % kIndexListRetryEvery == 0) {
+        const ssize_t written = write(fd, &cmd, 6);
+        if (written != 6) {
+          ALOGW("error re-querying mgmt index list: %s", strerror(errno));
+        }
+      }
+      continue;
+    }
+
+    // A control socket error cannot recover by waiting forever.
+    if ((pollfd.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0) {
+      ALOGE("bluetooth mgmt poll revents=0x%x", pollfd.revents);
+      ret = -1;
+      break;
+    }
+
+    // Spurious wakeup without readable data.
+    if ((pollfd.revents & POLLIN) == 0) {
       continue;
     }
 
@@ -166,13 +195,19 @@ int NetBluetoothMgmt::waitHciDev(int hci_interface) {
       }
     }
 
-    // Received [Index Added] event.
-    if (ev.opcode == MGMT_EV_INDEX_ADDED && ev.index == hci_interface) {
-      ALOGI("hci interface %d added", hci_interface);
-      ret = hci_interface;
+    // Received [Index Added] event. Keep this consistent with the
+    // READ_INDEX_LIST fallback above, which accepts a larger controller index
+    // if the exact requested index is not present.
+    if (ev.opcode == MGMT_EV_INDEX_ADDED && ev.index >= hci_interface) {
+      ALOGI("hci interface %d added", ev.index);
+      ret = ev.index;
       goto end;
     }
   }
+
+  ALOGE("timed out waiting for hci interface %d after %d ms",
+        hci_interface, kPollSliceMs * kMaxPollAttempts);
+  ret = -1;
 
 end:
   ::close(fd);
@@ -180,28 +215,44 @@ end:
 }
 
 int NetBluetoothMgmt::findRfKill() {
+  // ARDA_PI5_BT_DYNAMIC_RFKILL_V1_1
+  //
+  // rfkill indexes are not stable across a serdev reprobe. A missing
+  // rfkill0 must not terminate discovery because Bluetooth may legitimately
+  // reappear as rfkill1/rfkill2/etc.
+  if (rfkill_state_ != NULL) return 0;
+
+  constexpr int kMaxRfkillDevices = 64;
+
+  for (int i = 0; i < kMaxRfkillDevices; ++i) {
     char rfkill_type[64];
-    char type[16];
-    int fd, size, i;
-    for(i = 0; rfkill_state_ == NULL; i++)
-    {
-        snprintf(rfkill_type, sizeof(rfkill_type), "/sys/class/rfkill/rfkill%d/type", i);
-        if ((fd = open(rfkill_type, O_RDONLY)) < 0)
-        {
-            ALOGE("open(%s) failed: %s (%d)\n", rfkill_type, strerror(errno), errno);
-            return -1;
-        }
+    char type[16] = {};
 
-        size = read(fd, &type, sizeof(type));
-        ::close(fd);
+    snprintf(rfkill_type, sizeof(rfkill_type),
+             "/sys/class/rfkill/rfkill%d/type", i);
 
-        if ((size >= 9) && !memcmp(type, "bluetooth", 9))
-        {
-            ::asprintf(&rfkill_state_, "/sys/class/rfkill/rfkill%d/state", i);
-            break;
-        }
+    int fd = open(rfkill_type, O_RDONLY);
+    if (fd < 0) {
+      if (errno != ENOENT) {
+        ALOGW("open(%s) failed: %s (%d)", rfkill_type,
+              strerror(errno), errno);
+      }
+      continue;
     }
-    return 0;
+
+    const ssize_t size = read(fd, type, sizeof(type) - 1);
+    ::close(fd);
+
+    if (size >= 9 && !memcmp(type, "bluetooth", 9)) {
+      ::asprintf(&rfkill_state_,
+                 "/sys/class/rfkill/rfkill%d/state", i);
+      ALOGI("Bluetooth rfkill state node: %s", rfkill_state_);
+      return 0;
+    }
+  }
+
+  ALOGE("no Bluetooth rfkill state node found");
+  return -1;
 }
 
 int NetBluetoothMgmt::rfKill(int block) {
